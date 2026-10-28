@@ -1,175 +1,96 @@
-# Contador de Pessoas
+# 👥 Contador de Pessoas
 
-Contagem de pessoas em imagens, vídeos e webcam usando visão computacional
-(YOLO / Ultralytics). Projeto do IFSP.
+**English** · [Português](README.pt-BR.md)
 
-O script detecta a classe **`person`** do dataset COCO e mostra/salva a imagem
-anotada com a contagem.
+[![Python](https://img.shields.io/badge/Python_3.12+-3776AB?style=for-the-badge&logo=python&logoColor=white)]()
+[![YOLO](https://img.shields.io/badge/YOLO-Ultralytics-111F68?style=for-the-badge)]()
+[![OpenCV](https://img.shields.io/badge/OpenCV-5C3EE8?style=for-the-badge&logo=opencv&logoColor=white)]()
 
----
+People counting in images, videos, webcams and live streams using computer vision (YOLO from
+Ultralytics). The script detects the COCO **`person`** class, counts people and saves annotated
+output. Built as a course project at IFSP.
 
-## Como funciona
+## 📈 Results
 
-Usa um modelo YOLO pré-treinado. O modo de entrada é detectado automaticamente
-pela `--fonte`:
+On a crowd photo from a concert, the original settings (`imgsz=640`, `conf=0.3`) detected only
+**9 people**. The biggest error came from low inference resolution and a high confidence threshold,
+not from model size. Raising the defaults to `imgsz=1280` and `conf=0.2` brought the count to
+**about 30 people** with the same nano model.
 
-| Fonte                        | Modo      | Exemplo                                  |
-|------------------------------|-----------|------------------------------------------|
-| Arquivo de imagem            | imagem    | `--fonte foto.jpg`                       |
-| Pasta com imagens            | pasta     | `--fonte ./imagens/`                     |
-| Arquivo de vídeo             | vídeo     | `--fonte video.mp4`                      |
-| Índice de webcam             | webcam    | `--fonte 0`                              |
-| URL de stream (DroidCam/IP)  | stream    | `--fonte http://IP:4747/video`           |
+## 🚀 Features
 
----
+- **Automatic input detection** from `--fonte` (source):
 
-## Instalação
+| Source | Mode | Example |
+| --- | --- | --- |
+| Image file | image | `--fonte photo.jpg` |
+| Image folder | folder | `--fonte ./images/` |
+| Video file | video | `--fonte video.mp4` |
+| Webcam index | webcam | `--fonte 0` |
+| Stream URL (DroidCam/IP) | stream | `--fonte http://IP:4747/video` |
 
-Requer **Python 3.12+**.
+- **Unique people in video** with ByteTrack tracking (`--tracking`), instead of a per-frame count
+- **Arrival and departure log:** saves a face crop of each tracked person at a set interval, grouped
+  by ID, plus a `presenca.csv` with time, people count and active IDs
+- **Exports:** annotated images and video, and a per-frame count CSV
+
+## ⚙️ Installation
+
+Requires **Python 3.12+**.
 
 ```bash
 pip install -r requirements.txt
-```
-
-Ou, se usar o [uv](https://docs.astral.sh/uv/):
-
-```bash
+# or, with uv
 uv sync
 ```
 
-Na primeira execução o modelo (`yolo26n.pt`) é baixado automaticamente.
+The model (`yolo26n.pt`) is downloaded automatically on the first run.
 
----
-
-## Uso
+## 💻 Usage
 
 ```bash
-# imagem única
-python contador_pessoas.py --fonte teste.jpg
+# single image, result saved to a folder
+python contador_pessoas.py --fonte photo.jpg --saida ./results/
 
-# imagem com resultado salvo em pasta
-python contador_pessoas.py --fonte teste.jpg --saida ./resultados/
+# hard crowd: higher resolution and lower confidence detect more people
+python contador_pessoas.py --fonte photo.jpg --imgsz 1536 --conf 0.15
 
-# multidão difícil: mais resolução e menos confiança = detecta mais gente
-python contador_pessoas.py --fonte teste.jpg --imgsz 1536 --conf 0.15
+# video, counting unique people with tracking
+python contador_pessoas.py --fonte video.mp4 --tracking --saida ./results/
 
-# pasta inteira de imagens
-python contador_pessoas.py --fonte ./imagens/ --saida ./resultados/
-
-# vídeo contando pessoas únicas (tracking)
-python contador_pessoas.py --fonte video.mp4 --tracking --saida ./resultados/
-
-# webcam ao vivo (pressione 'q' na janela para parar)
+# live webcam (press 'q' to stop)
 python contador_pessoas.py --fonte 0 --tracking
 
-# ao vivo salvando rostos a cada 10s para ver quem chegou/saiu
-python contador_pessoas.py --fonte 0 --tracking --snapshots ./rostos/ --intervalo 10
+# live, saving face crops every 10 s to see who arrived or left
+python contador_pessoas.py --fonte 0 --tracking --snapshots ./faces/ --intervalo 10
 ```
 
----
+## 🎛️ Options
 
-## Opções
+| Argument | Default | Description |
+| --- | --- | --- |
+| `--fonte` | required | Image, folder, video, webcam index (`0`, `1`, …) or stream URL |
+| `--modelo` | `yolo26n.pt` | YOLO model. `n` = nano (fast); `s`/`m` are more accurate and slower |
+| `--conf` | `0.2` | Minimum confidence (0 to 1). Lower finds more people, with more false positives |
+| `--imgsz` | `1280` | Inference resolution. Higher finds smaller or distant people |
+| `--iou` | `0.6` | NMS IoU threshold. Helps separate people standing close together |
+| `--max-det` | `1000` | Maximum detections per image |
+| `--tracking` | off | In video, counts **unique people** (ByteTrack) instead of per frame |
+| `--snapshots` | none | Folder for periodic face crops |
+| `--intervalo` | `5` | Seconds between face crop saves |
+| `--saida` | none | Folder for annotated output and the per-frame count CSV |
 
-| Argumento     | Padrão       | Descrição                                                                 |
-|---------------|--------------|--------------------------------------------------------------------------|
-| `--fonte`     | (obrigatório)| Imagem, pasta, vídeo, índice de webcam (`0`,`1`,…) ou URL de stream.      |
-| `--modelo`    | `yolo26n.pt` | Modelo YOLO. `n` = nano (rápido); `s`/`m` dão mais precisão (mais lento). |
-| `--conf`      | `0.2`        | Confiança mínima (0 a 1). Menor detecta mais, porém com mais falsos.      |
-| `--imgsz`     | `1280`       | Resolução de inferência. Maior detecta pessoas menores/distantes.        |
-| `--iou`       | `0.6`        | Limiar de IoU do NMS. Ajuda a separar pessoas coladas.                    |
-| `--max-det`   | `1000`       | Máximo de detecções por imagem.                                          |
-| `--tracking`  | desligado    | Em vídeo, conta **pessoas únicas** (ByteTrack) em vez de por frame.       |
-| `--snapshots` | nenhum       | Pasta onde salvar recortes de rosto de tempo em tempo (ver seção abaixo). |
-| `--intervalo` | `5`          | Segundos entre cada salvamento de rostos.                                |
-| `--saida`     | nenhum       | Pasta para salvar imagem/vídeo anotado e o CSV de contagem por frame.     |
+## 📂 Outputs
 
----
+- **Image or folder:** `anotada_<name>.jpg` with boxes and the count
+- **Video or webcam:** `video_anotado.mp4` and `contagem_por_frame.csv` (`frame`, `pessoas_no_frame`, `unicas_acumuladas`)
+- **Snapshots:** face crops (by ID when `--tracking` is on) and `presenca.csv`
 
-## Precisão em multidão (importante)
+## ⚠️ Known Limitations
 
-Numa foto de show, o script detectava **apenas 9 pessoas** com os padrões
-originais (`imgsz=640`, `conf=0.3`). O maior erro **não** vinha do tamanho do
-modelo, e sim de:
-
-1. **Resolução de inferência baixa** — pessoas pequenas/distantes só aparecem em
-   alta resolução. Os padrões agora são `imgsz=1280` e `conf=0.2`, o que levou a
-   contagem para **~30 pessoas** com o mesmo modelo nano.
-2. **Confiança alta demais** — em multidão vale baixar para `0.15`–`0.2`.
-
-Dicas para melhorar ainda mais:
-
-- Aumente a resolução: `--imgsz 1536` (ou `1920`, se a máquina aguentar).
-- Baixe a confiança: `--conf 0.15`.
-- Use um modelo maior: `--modelo yolo11m.pt` (mais lento, um pouco mais preciso).
-
-> **Limite conhecido:** em oclusão severa (pessoas totalmente cobertas por
-> outras) a contagem por detecção **sempre subestima** um pouco. Isso é esperado
-> em qualquer detector baseado em caixas e deve ser mencionado no relatório.
-
----
-
-## Registro de rostos ao vivo — quem chegou / quem saiu
-
-Use `--snapshots` numa fonte ao vivo (webcam ou stream) para **salvar o rosto de
-cada pessoa de tempo em tempo** e acompanhar quem entrou ou saiu:
-
-```bash
-python contador_pessoas.py --fonte 0 --tracking --snapshots ./rostos/ --intervalo 10
-```
-
-A cada `--intervalo` segundos, o script recorta a região do rosto de cada pessoa
-detectada e salva. **Combine com `--tracking`**: aí os recortes são organizados
-por ID, montando uma galeria de cada pessoa ao longo do tempo:
-
-```text
-rostos/
-├── id_1/                  # cada pasta = uma pessoa (ID do tracking)
-│   ├── 14-32-05.jpg       # o mesmo rosto salvo a cada intervalo
-│   └── 14-32-15.jpg
-├── id_2/
-│   └── 14-32-05.jpg
-└── presenca.csv           # horario, n_pessoas, ids_ativos
-```
-
-Como ler:
-
-- **Chegou alguém** → aparece uma **pasta de ID nova** (e um ID novo em
-  `presenca.csv`).
-- **Saiu alguém** → um ID **para de ganhar** fotos novas / some da lista de
-  `ids_ativos`.
-- Sem `--tracking`, os recortes vão para subpastas por horário
-  (`rostos/14-32-05/pessoa_1.jpg`), sem agrupar por pessoa.
-
-> **Limite conhecido:** o ID vem do rastreador (ByteTrack), não de
-> reconhecimento facial. Se a pessoa **sai do quadro e volta**, ou fica muito
-> tempo tapada por outra, ela pode ganhar um **ID novo**. Para reconhecer a mesma
-> pessoa de verdade nesses casos seria preciso reconhecimento facial (biblioteca
-> extra). O recorte do rosto também é uma aproximação (topo da caixa do corpo),
-> então pode sair torto quando a pessoa está olhando para baixo.
-
----
-
-## Saídas geradas
-
-Com `--saida`:
-
-- **Imagem/pasta:** `anotada_<nome>.jpg` com as caixas e a contagem.
-- **Vídeo/webcam:** `video_anotado.mp4` e `contagem_por_frame.csv`
-  (colunas: `frame`, `pessoas_no_frame`, `unicas_acumuladas`).
-
-Com `--snapshots`:
-
-- Recortes de rosto (por ID, se houver `--tracking`) e `presenca.csv`.
-
----
-
-## Estrutura do projeto
-
-```text
-Contador/
-├── contador_pessoas.py   # script principal
-├── teste.jpg             # imagem de exemplo (multidão)
-├── requirements.txt      # dependências (pip)
-├── pyproject.toml        # dependências (uv)
-└── README.md
-```
+- With heavy occlusion (people fully hidden behind others), detection-based counting always
+  undercounts somewhat. This is expected for any box-based detector.
+- IDs come from the tracker, not from face recognition: a person who leaves the frame and comes
+  back, or stays hidden for long, may get a new ID.
+- The face crop is an approximation (top of the body box) and can be off when the person looks down.
+- Face crops are personal data. Only use the snapshot feature where people have been informed.
